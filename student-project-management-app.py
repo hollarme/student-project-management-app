@@ -153,9 +153,7 @@ with setup:
     parent_folder_name = f"{session}-{semester}"
             
     result = getFileListFromGDrive()
-    
-    print(result)
-    
+        
     parent_folder_id = [dic['id'] for dic in result.get('files') if dic['name']==parent_folder_name][0]
             
             
@@ -197,7 +195,7 @@ with tab2:
     f'Select your registration number:',
     [student for student in grouping_tables.index], key=1)
 
-    st.write(f'You are in Group {grouping_tables.loc[folder_name].Group if folder_name else 0: 1}')
+    # st.write(f'You are in Group {grouping_tables.loc[folder_name].Group if folder_name else 0: 1}')
     try:
         folder_id = create_folder(parent_folder_id, folder_name)
     except FileExistsError:
@@ -213,6 +211,7 @@ with tab2:
     topic_dataframe.loc[topic_dataframe.Number==folder_name, 'Topic'] = project_title
     st.button('Save', on_click=set_with_dataframe(get_database(parent_folder_id, 'Topic List', 'Sheet1'), topic_dataframe))
     
+    st.write('Upload your file(s) below:')
     file_type = st.radio(
     "What type of file is it?",
     (None,'Thesis', 'Slide'), horizontal=True)
