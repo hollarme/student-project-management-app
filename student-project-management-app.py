@@ -260,4 +260,4 @@ with tab2:
         }
         res = getfilelist.GetFileList(resource)  # or r = getfilelist.GetFolderTree(resource)
 
-        st.markdown("<br/>".join([f":green[{dic['name']}]" for dic in res['fileList'][0]['files']]))
+        st.markdown(" <br/> ".join([f":green[{dic['name']}]" for dic in res['fileList'][0]['files']]))
