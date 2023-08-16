@@ -235,7 +235,7 @@ with tab2:
     "What type of file is it?",
     (None,'Thesis', 'Slide'), horizontal=True)
     
-    col1, col2 = st.columns([0.7,0.3])
+    col1, col2 = st.columns([0.5,0.5])
     
     with col1:
 
@@ -252,7 +252,7 @@ with tab2:
                 st.warning('Make sure you select a file type', icon="⚠️")
                 
     with col2:
-
+        st.write('Current content of your personal folder:')
         resource = {
             "service_account": credentials,
             "id": f"{folder_id}",
