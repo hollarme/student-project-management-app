@@ -12,29 +12,37 @@ from googleapiclient.errors import HttpError
 
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
 
+from getfilelistpy import getfilelist
+
 
 folder_id = None
 parent_folder_id = None
 
-class GoogleDriveService:
-    def __init__(self):
-        self._SCOPES=['https://www.googleapis.com/auth/drive', 'https://spreadsheets.google.com/feeds', 
-                      'https://www.googleapis.com/auth/drive.file']
-        
-        # self.ServiceAccountCredentials = st.secrets['ServiceAccountCredentials']
-        # st.write(st.secrets['ServiceAccountCredentials'])
-        # self.jsonString = json.dumps({key:value for key, value in self.ServiceAccountCredentials.items()})
-        
-    def build(self):
-        creds = service_account.Credentials.from_service_account_info(st.secrets["ServiceAccountCredentialsSheet"], scopes = self._SCOPES)
-        service = build('drive', 'v3', credentials=creds)
+SCOPES=['https://www.googleapis.com/auth/drive', 'https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive.file']
 
-        return service
+credentials = service_account.Credentials.from_service_account_info(st.secrets["ServiceAccountCredentialsSheet"], scopes = SCOPES)
+
+service = build('drive', 'v3', credentials=credentials)
+
+
+# class GoogleDriveService:
+#     def __init__(self):
+#         self._SCOPES=['https://www.googleapis.com/auth/drive', 'https://spreadsheets.google.com/feeds', 
+#                       'https://www.googleapis.com/auth/drive.file']
+        
+#         # self.ServiceAccountCredentials = st.secrets['ServiceAccountCredentials']
+#         # st.write(st.secrets['ServiceAccountCredentials'])
+#         # self.jsonString = json.dumps({key:value for key, value in self.ServiceAccountCredentials.items()})
+        
+#     def build(self):
+#         creds = service_account.Credentials.from_service_account_info(st.secrets["ServiceAccountCredentialsSheet"], scopes = self._SCOPES)
+#         service = build('drive', 'v3', credentials=creds)
+
+#         return service
     
 def getFileListFromGDrive():
     selected_fields="files(id,name,webViewLink)"
-    g_drive_service=GoogleDriveService().build()
-    list_file=g_drive_service.files().list(fields=selected_fields).execute()
+    list_file=service.files().list(fields=selected_fields).execute()
     return {"files":list_file.get("files")}
 
 
@@ -50,7 +58,7 @@ def create_folder(folder_name, parent_folder_id):
     
     try:
         # create drive api client
-        service = GoogleDriveService().build()
+        # service = GoogleDriveService().build()
         file_metadata = {
             'name': f'{folder_name}',
             'parents' : [f'{parent_folder_id}'],
@@ -81,15 +89,22 @@ def upload_to_folder(folder_id, file_name, file):
     Args: Id of the folder
     Returns: ID of the file uploaded
     """
+    
+    # create drive api client
+    # service = GoogleDriveService().build()
+        
     files_uploaded = getFileListFromGDrive()
 
     if file_name in [file['name'] for file in files_uploaded['files'] if file['name'].endswith('.pdf')]:
-        raise FileExistsError
+        
+        file_id = [file['id'] for file in files_uploaded['files'] if file['name']==file_name][0]
+        
+        service.files().delete(fileId=file_id).execute()
+        
+        # raise FileExistsError
         
     try:
-        # create drive api client
-        service = GoogleDriveService().build()
-
+        
         file_metadata = {
             'name': f'{file_name}',
             'parents': [folder_id]
@@ -108,23 +123,23 @@ def upload_to_folder(folder_id, file_name, file):
 
 
 def get_database(parent_folder_id, db_name, sheet):
-        # Create a list of scope values to pass to the credentials object
-        scope = ['https://spreadsheets.google.com/feeds',
-                'https://www.googleapis.com/auth/drive']
+#         # Create a list of scope values to pass to the credentials object
+#         scope = ['https://spreadsheets.google.com/feeds',
+#                 'https://www.googleapis.com/auth/drive']
 
-        # Create a credentials object using the service account info and scope values
-        credentials = service_account.Credentials.from_service_account_info(
-                    st.secrets["ServiceAccountCredentialsSheet"], scopes = scope)
+#         # Create a credentials object using the service account info and scope values
+#         credentials = service_account.Credentials.from_service_account_info(
+#                     st.secrets["ServiceAccountCredentialsSheet"], scopes = scope)
 
         # Authorize the connection to Google Sheets using the credentials object
         gc = gspread.authorize(credentials)
         
         try:
             # Open the Google Sheets document with the specified name
-            sh = gc.open(db_name)
+            sh = gc.open(db_name, parent_folder_id)
         except SpreadsheetNotFound:
             # Create the Google Sheets document with the specified name
-            sh = gc.create(db_name)
+            sh = gc.create(db_name, parent_folder_id)
         try:
             # Access the worksheet within the document with the specified name
             worksheet = sh.worksheet(sheet) 
@@ -197,33 +212,52 @@ with tab2:
 
     # st.write(f'You are in Group {grouping_tables.loc[folder_name].Group if folder_name else 0: 1}')
     try:
-        folder_id = create_folder(parent_folder_id, folder_name)
+        folder_id = create_folder(folder_name, parent_folder_id)
     except FileExistsError:
         all_files = getFileListFromGDrive()
         folder_id = [file['id'] for file in all_files['files'] if file['name']==folder_name][0]
+            
+    get_database(parent_folder_id, 'Topic List', 'Sheet1') #creates the sheet
+    topic_dataframe = get_as_dataframe(get_database(parent_folder_id, "Defense Grouping List", 'Sheet1'),usecols=['Reg. Number','Names','Adviser']).dropna(how='all')#pd.read_csv('defense_grouping_list.csv', nrows=1000)
+    topic_dataframe.set_index('Reg. Number',inplace=True)
+    topic_dataframe['Title'] = ''
     
-    topic_dataframe = get_as_dataframe(get_database(parent_folder_id, 'Topic List', 'Sheet1'),usecols=['Number','Topic']).dropna(how='all')
-    try:
-        topic = topic_dataframe[topic_dataframe.Number==folder_name]['Topic'].values[0]
-    except IndexError:
-        topic = ""
+    topic = topic_dataframe.at[folder_name, 'Title']
+    
     project_title = st.text_area('Enter the title of your project here...', value=topic)
-    topic_dataframe.loc[topic_dataframe.Number==folder_name, 'Topic'] = project_title
+    
+    topic_dataframe.at[folder_name, 'Title'] = project_title
+    # st.dataframe(topic_dataframe)
     st.button('Save', on_click=set_with_dataframe(get_database(parent_folder_id, 'Topic List', 'Sheet1'), topic_dataframe))
     
     st.write('Upload your file(s) below:')
     file_type = st.radio(
     "What type of file is it?",
     (None,'Thesis', 'Slide'), horizontal=True)
+    
+    col1, col2 = st.columns([0.7,0.3])
+    
+    with col1:
 
-    file=st.file_uploader("Choose a PDF file", type=['pdf'], accept_multiple_files=False)
-     
-    if file:
-        if file_type:
-            file_name = f"{folder_name}-{file.name.split('.')[0]}-{file_type}.pdf"
-            try:
+        file=st.file_uploader("Choose a PDF file", type=['pdf'], accept_multiple_files=False)
+
+        if file:
+            if file_type:
+                file_name = f"{folder_name}-{file.name.split('.')[0]}-{file_type}.pdf"
+                # try:
                 upload_to_folder(folder_id, file_name, file)
-            except FileExistsError:
-                st.warning(f"The file exists already. Either close the file or rename your file like so :red['{file.name.split('.')[0]}-v1.0.pdf']", icon="⚠️")
-        else:
-            st.warning('Make sure you select a file type', icon="⚠️")
+                # except FileExistsError:
+                #     st.warning(f"The file exists already. Either close the file or rename your file like so :red['{file.name.split('.')[0]}-v1.0.pdf']", icon="⚠️")
+            else:
+                st.warning('Make sure you select a file type', icon="⚠️")
+                
+    with col2:
+
+        resource = {
+            "service_account": credentials,
+            "id": f"{folder_id}",
+            "fields": "files(name,id)",
+        }
+        res = getfilelist.GetFileList(resource)  # or r = getfilelist.GetFolderTree(resource)
+
+        st.write("\n".join([dic['name'] for dic in res['fileList'][0]['files']]))
