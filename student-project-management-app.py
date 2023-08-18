@@ -228,7 +228,7 @@ with tab2:
     
     topic_dataframe.at[folder_name, 'Title'] = project_title
     # st.dataframe(topic_dataframe)
-    st.button('Save', on_click=set_with_dataframe(get_database(parent_folder_id, 'Topic List', 'Sheet1'), topic_dataframe))
+    st.button('Save', on_click=set_with_dataframe(get_database(parent_folder_id, 'Topic List', 'Sheet1'), topic_dataframe, include_index=True))
     
     st.write('Upload your file(s) below:')
     file_type = st.radio(
