@@ -227,7 +227,7 @@ with tab2:
         topic_dataframe.set_index('Reg. Number',inplace=True)
         topic_dataframe['Title'] = ''
     
-    topic_dataframe = get_database(parent_folder_id, 'Topic List', 'Sheet1')
+    topic_dataframe = get_as_dataframe(get_database(parent_folder_id, 'Topic List', 'Sheet1')).dropna(how='all')
     topic = topic_dataframe.at[folder_name, 'Title']
     
     project_title = st.text_area('Enter the title of your project here...', value=topic)
