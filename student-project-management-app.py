@@ -24,6 +24,8 @@ credentials = service_account.Credentials.from_service_account_info(st.secrets["
 
 service = build('drive', 'v3', credentials=credentials)
 
+gc = gspread.authorize(credentials)
+
 
 # class GoogleDriveService:
 #     def __init__(self):
@@ -132,7 +134,7 @@ def get_database(parent_folder_id, db_name, sheet):
 #                     st.secrets["ServiceAccountCredentialsSheet"], scopes = scope)
 
         # Authorize the connection to Google Sheets using the credentials object
-        gc = gspread.authorize(credentials)
+        # gc = gspread.authorize(credentials)
         
         try:
             # Open the Google Sheets document with the specified name
@@ -217,9 +219,10 @@ with tab2:
         all_files = getFileListFromGDrive()
         folder_id = [file['id'] for file in all_files['files'] if file['name']==folder_name][0]
             
+    find_topic_list = gc.list_spreadsheet_files(folder_id=parent_folder_id)
+    topic_list_exist = any([True if dic['name']=='Topic List' else False for dic in find_topic_list])
     
-    find_topic_list = getFileListFromGDrive()
-    topic_list_exist = any([True if dic['name']=='Topic List' else False for dic in find_topic_list.get('files')])
+    # print(topic_list_exist)
     
     if not topic_list_exist:
         get_database(parent_folder_id, 'Topic List', 'Sheet1') #creates the sheet
@@ -228,7 +231,7 @@ with tab2:
         topic_dataframe['Title'] = ''
         set_with_dataframe(get_database(parent_folder_id, 'Topic List', 'Sheet1'), topic_dataframe, include_index=True)
     
-    topic_dataframe = get_as_dataframe(get_database(parent_folder_id, "Defense Grouping List", 'Sheet1'),usecols=['Reg. Number','Names','Adviser']).dropna(how='all')#pd.read_csv('defense_grouping_list.csv', nrows=1000)
+    topic_dataframe = get_as_dataframe(get_database(parent_folder_id, "Topic List", 'Sheet1'),usecols=['Reg. Number','Names','Adviser', 'Title']).dropna(how='all')#pd.read_csv('defense_grouping_list.csv', nrows=1000)
     topic_dataframe.set_index('Reg. Number',inplace=True)
     topic = topic_dataframe.at[folder_name, 'Title']
     
