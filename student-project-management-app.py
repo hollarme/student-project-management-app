@@ -217,10 +217,15 @@ with tab2:
         all_files = getFileListFromGDrive()
         folder_id = [file['id'] for file in all_files['files'] if file['name']==folder_name][0]
             
-    get_database(parent_folder_id, 'Topic List', 'Sheet1') #creates the sheet
-    topic_dataframe = get_as_dataframe(get_database(parent_folder_id, "Defense Grouping List", 'Sheet1'),usecols=['Reg. Number','Names','Adviser']).dropna(how='all')#pd.read_csv('defense_grouping_list.csv', nrows=1000)
-    topic_dataframe.set_index('Reg. Number',inplace=True)
-    topic_dataframe['Title'] = ''
+    
+    find_topic_list = getFileListFromGDrive()
+    topic_list_exist = any([True if dic['name']=='Topic List' else False for dic in find_topic_list.get('files')])
+    
+    if not topic_list_exist:
+        get_database(parent_folder_id, 'Topic List', 'Sheet1') #creates the sheet
+        topic_dataframe = get_as_dataframe(get_database(parent_folder_id, "Defense Grouping List", 'Sheet1'),usecols=['Reg. Number','Names','Adviser']).dropna(how='all')#pd.read_csv('defense_grouping_list.csv', nrows=1000)
+        topic_dataframe.set_index('Reg. Number',inplace=True)
+        topic_dataframe['Title'] = ''
     
     topic = topic_dataframe.at[folder_name, 'Title']
     
