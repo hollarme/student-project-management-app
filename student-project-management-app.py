@@ -170,8 +170,11 @@ with setup:
     parent_folder_name = f"{session}-{semester}"
             
     result = getFileListFromGDrive()
-        
-    parent_folder_id = [dic['id'] for dic in result.get('files') if dic['name']==parent_folder_name][0]
+    
+    try:
+        parent_folder_id = [dic['id'] for dic in result.get('files') if dic['name']==parent_folder_name][0]
+    except IndexError:
+        pass
             
             
 
