@@ -178,7 +178,7 @@ with setup:
     try:
         st.session_state.folder_id = [dic['id'] for dic in result.get('files') if dic['name']==parent_folder_name][0]
     except IndexError:
-        if folder_name in ["2021/2022-Rain-EEE501", "2021/2022-Rain-EEE502"]:
+        if parent_folder_name in ["2021/2022-Rain-EEE501", "2021/2022-Rain-EEE502"]:
             st.session_state.folder_id = '1EJQyD0NghC1lxalJCWINQYvqAZdnGDve'
             
 
