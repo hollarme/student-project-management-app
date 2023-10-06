@@ -167,16 +167,22 @@ with setup:
     'What is the current semester?',
     ('Rain', 'Harmattan'))
     
-    parent_folder_name = f"{session}-{semester}"
+    course_name = st.selectbox(
+    'What course is it?',
+    ('EEE501', 'EEE502'))
+    
+    parent_folder_name = f"{session}-{semester}-{course_name}"
             
     result = getFileListFromGDrive()
     
     try:
-        parent_folder_id = [dic['id'] for dic in result.get('files') if dic['name']==parent_folder_name][0]
+        st.session_state.folder_id = [dic['id'] for dic in result.get('files') if dic['name']==parent_folder_name][0]
     except IndexError:
-        pass
+        if folder_name in ["2021/2022-Rain-EEE501", "2021/2022-Rain-EEE502"]:
+            st.session_state.folder_id = '1EJQyD0NghC1lxalJCWINQYvqAZdnGDve'
             
-            
+
+parent_folder_id = st.session_state.folder_id
 
 with tab0:
   
